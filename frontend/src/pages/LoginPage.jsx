@@ -6,8 +6,23 @@ export default function LoginPage({ setView }) {
   const [role, setRole] = useState('Admin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [lockSeconds, setLockSeconds] = useState(0);
+
+  const [rememberMe, setRememberMe] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [apiError, setApiError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+
+  const validateEmailFormat = (value) => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!value.trim()) return false;
+    return emailPattern.test(value);
+  };
+
+  const isEmailValid = validateEmailFormat(email);
+  const isFormValid = isEmailValid && password.trim() !== '' && lockSeconds === 0;
 
   useEffect(() => {
     if (lockSeconds <= 0) return;
@@ -16,6 +31,8 @@ export default function LoginPage({ setView }) {
       setLockSeconds((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          setApiError('');
+          setFailedAttempts(0);
           return 0;
         }
         return prev - 1;
@@ -26,8 +43,19 @@ export default function LoginPage({ setView }) {
   }, [lockSeconds]);
 
   const handleLogin = async () => {
+    if (!isEmailValid) {
+      setEmailError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!password.trim()) {
+      setApiError('Password is required.');
+      return;
+    }
+
     try {
       setLoading(true);
+      setApiError('');
 
       const response = await API.post('/auth/login', {
         email,
@@ -35,21 +63,34 @@ export default function LoginPage({ setView }) {
         role: role.toLowerCase(),
       });
 
-      localStorage.setItem('access_token', response.data.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.data.user));
-      localStorage.setItem('role', response.data.data.user.role);
+      const storage = rememberMe ? localStorage : sessionStorage;
 
+      storage.setItem('access_token', response.data.data.access_token);
+      storage.setItem('token', response.data.data.access_token);
+      storage.setItem('user', JSON.stringify(response.data.data.user));
+      storage.setItem('role', response.data.data.user.role);
+      storage.setItem('email', email);
+
+      setFailedAttempts(0);
       setView('dashboard');
     } catch (error) {
       const errorData = error?.response?.data?.data;
 
       if (errorData?.account_locked) {
         setLockSeconds(errorData.remaining_seconds || 60);
-        alert(error?.response?.data?.message || 'Account locked temporarily');
+        setApiError(error?.response?.data?.message || 'Account locked temporarily.');
         return;
       }
 
-      alert(error?.response?.data?.message || 'Login failed');
+      const nextAttempt =
+        errorData?.failed_attempt_count ||
+        errorData?.failedAttempts ||
+        failedAttempts + 1;
+
+      setFailedAttempts(nextAttempt);
+      setPassword('');
+
+      setApiError(error?.response?.data?.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -147,20 +188,56 @@ export default function LoginPage({ setView }) {
               </div>
             </div>
 
+            {apiError && (
+              <div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
+                {apiError}
+              </div>
+            )}
+
+            {failedAttempts > 0 && failedAttempts < 5 && lockSeconds === 0 && (
+              <div className="mb-3 rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-700">
+                Failed login attempt {failedAttempts} of 5.
+              </div>
+            )}
+
+            {lockSeconds > 0 && (
+              <div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
+                Account temporarily locked. Try again in {lockSeconds} seconds.
+              </div>
+            )}
+
             <div className="space-y-4">
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                  </svg>
-                </span>
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
+              <div>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </span>
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setEmailError('');
+                      setApiError('');
+                    }}
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                {email && !isEmailValid && (
+                  <p className="mt-1 text-xs text-red-500">
+                    Please enter a valid email address.
+                  </p>
+                )}
+
+                {emailError && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {emailError}
+                  </p>
+                )}
               </div>
 
               <div className="relative">
@@ -173,25 +250,70 @@ export default function LoginPage({ setView }) {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setApiError('');
+                  }}
+                  disabled={lockSeconds > 0}
                   className="w-full pl-11 pr-11 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
                 <button type="button" onClick={() => setShowPassword(prev => !prev)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </svg>
+) : (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)}
                 </button>
               </div>
 
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="remember" className="w-4 h-4 text-purple-700 border-gray-300 rounded focus:ring-purple-500" />
+                <input
+                  type="checkbox"
+                  id="remember"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-purple-700 border-gray-300 rounded focus:ring-purple-500"
+                />
                 <label htmlFor="remember" className="text-sm text-gray-500">Remember me</label>
               </div>
 
               <button
                 type="button"
                 onClick={handleLogin}
-                disabled={loading || lockSeconds > 0}
-                className="w-full py-3 rounded-xl bg-purple-700 text-white font-bold text-sm hover:bg-purple-800 active:scale-[0.98] transition-all"
+                disabled={!isFormValid || loading}
+                className={`w-full py-3 rounded-xl text-white font-bold text-sm active:scale-[0.98] transition-all ${
+                  !isFormValid || loading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-purple-700 hover:bg-purple-800'
+                }`}
               >
                 {lockSeconds > 0 ? `Try again in ${lockSeconds}s` : loading ? 'Logging in...' : 'Log in'}
               </button>

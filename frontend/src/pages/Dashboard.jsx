@@ -73,6 +73,7 @@ export default function Dashboard({ setView }) {
 
   const handleSignOut = () => {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('role');
     setView('login');
