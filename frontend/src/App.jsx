@@ -3,6 +3,8 @@ import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './ForgotPasswordPage';
 import CreatePasswordPage from './CreatePasswordPage';
 import Dashboard from './pages/Dashboard';
+import ProtectedRoute from './auth/ProtectedRoute';
+import SessionTimeout from './auth/SessionTimeout';
 
 export default function App() {
   const hasResetToken = new URLSearchParams(window.location.search).get('token');
@@ -22,10 +24,17 @@ export default function App() {
       `}</style>
 
       <div className="animate-fadeIn h-full w-full" key={view}>
+        {view === 'dashboard' && <SessionTimeout setView={setView} />}
+
         {view === 'login' && <LoginPage setView={setView} />}
         {view === 'forgot' && <ForgotPasswordPage setView={setView} />}
         {view === 'create' && <CreatePasswordPage setView={setView} />}
-        {view === 'dashboard' && <Dashboard setView={setView} />}
+
+        {view === 'dashboard' && (
+          <ProtectedRoute allowedRoles={['Admin', 'Recruiter']} setView={setView}>
+            <Dashboard setView={setView} />
+          </ProtectedRoute>
+        )}
       </div>
     </div>
   );
