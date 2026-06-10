@@ -33,6 +33,12 @@ app.config["FRONTEND_RESET_URL"] = os.getenv(
 )
 
 CORS(app)
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    return response
 
 JWTManager(app)
 db.init_app(app)
