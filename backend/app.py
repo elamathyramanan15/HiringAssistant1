@@ -27,13 +27,26 @@ app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
 app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
 app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_USERNAME")
 
-app.config["FRONTEND_RESET_URL"] = os.getenv("FRONTEND_RESET_URL", "http://localhost:3000")
+app.config["FRONTEND_RESET_URL"] = os.getenv(
+    "FRONTEND_RESET_URL",
+    "https://hiringassistant-buf8yhqey-elamathyramanan15s-projects.vercel.app"
+)
 
 CORS(
     app,
-    resources={r"/api/*": {"origins": "*"}}
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "https://hiringassistant-5s2q0sfen-elamathyramanan15s-projects.vercel.app",
+                "https://hiringassistant-buf8yhqey-elamathyramanan15s-projects.vercel.app"
+            ]
+        }
+    }
 )
-
 JWTManager(app)
 db.init_app(app)
 mail.init_app(app)
