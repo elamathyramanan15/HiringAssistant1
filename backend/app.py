@@ -29,12 +29,14 @@ app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_USERNAME")
 
 app.config["FRONTEND_RESET_URL"] = os.getenv(
     "FRONTEND_RESET_URL",
-    "https://hiringassistant-buf8yhqey-elamathyramanan15s-projects.vercel.app"
+    "https://hiringassistant.vercel.app"
 )
 
 CORS(
     app,
-    resources={r"/api/*": {"origins": "*"}}
+    resources={r"/api/*": {"origins": "*"}},
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"]
 )
 JWTManager(app)
 db.init_app(app)
