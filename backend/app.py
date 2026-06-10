@@ -148,27 +148,14 @@ app.config["FRONTEND_RESET_URL"] = os.getenv(
 
 )
  
-CORS(app,
+CORS(app, origins="*")
 
-     origins=[
-
-         "https://hiringassistant.vercel.app",
-
-         "https://*.vercel.app",
-
-         "http://localhost:5173",
-
-         "http://127.0.0.1:5173"
-
-     ],
-
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-
-     allow_headers=["Content-Type", "Authorization"],
-
-     supports_credentials=True
-
-)
+@app.after_request
+def after_request(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+    return response
  
 JWTManager(app)
 
