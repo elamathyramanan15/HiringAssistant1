@@ -17,14 +17,21 @@ const navItems = [
   { label: 'Platform Analytics', icon: BarChart3, active: false },
   { label: 'Settings', icon: Settings, active: false },
 ];
-
+import { CreateRecruiterModal } from '../components/recruiters/CreateRecruiterModal';
 const statusColors = ['#7C3AED', '#A78BFA', '#C4B5FD', '#EDE9FE', '#DDD6FE'];
 
+import Recruiters from './Recruiters';
+import PlatformAnalytics from './PlatformAnalytics';
+import SettingsPage from './Settings';
+
 export default function Dashboard({ setView }) {
+  const [activePage, setActivePage] = useState('Dashboard');
+  const [showModal, setShowModal] = useState(false);
   const [statsData, setStatsData] = useState([]);
   const [pipelineData, setPipelineData] = useState([]);
   const [statusData, setStatusData] = useState([]);
   const [recruiters, setRecruiters] = useState([]);
+
 
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const displayName = `${user.first_name || 'Admin'} ${user.last_name || 'User'}`.trim();
@@ -99,9 +106,12 @@ export default function Dashboard({ setView }) {
               <a
                 key={item.label}
                 href="#"
-                onClick={(e) => e.preventDefault()}
+               onClick={(e) => {
+  e.preventDefault();
+  setActivePage(item.label);
+}}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  item.active
+                  activePage === item.label
                     ? 'bg-violet-100 text-violet-700'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
@@ -153,16 +163,26 @@ export default function Dashboard({ setView }) {
           </div>
         </header>
 
-        <main className="p-6 bg-gray-50 min-h-[calc(100vh-65px)]">
+       <main className="p-6 bg-gray-50 min-h-[calc(100vh-65px)]">
+  {activePage === 'Recruiters' && <Recruiters />}
+  {activePage === 'Platform Analytics' && <PlatformAnalytics />}
+  {activePage === 'Settings' && <SettingsPage setView={setView} />}
+
+  {activePage === 'Dashboard' && (
+    <div>
+          
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
               <p className="text-sm text-gray-500 mt-0.5">Monitor your platform&apos;s recruiting activity</p>
             </div>
-            <button className="flex items-center gap-2 bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-purple-800 transition-colors">
-              <Plus size={16} />
-              Create Recruiter
-            </button>
+            <button
+  onClick={() => setShowModal(true)}
+  className="flex items-center gap-2 bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-purple-800 transition-colors"
+>
+  <Plus size={16} />
+  Create Recruiter
+</button>
           </div>
 
           <div className="grid grid-cols-4 gap-5 mb-6">
@@ -292,7 +312,9 @@ export default function Dashboard({ setView }) {
               </table>
             </div>
           </div>
-
+{showModal && <CreateRecruiterModal onClose={() => setShowModal(false)} />}
+      </div>
+  )}
         </main>
       </div>
     </div>

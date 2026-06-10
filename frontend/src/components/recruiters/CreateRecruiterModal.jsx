@@ -2,27 +2,14 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { PasswordChecklist } from '../shared/PasswordChecklist';
 import { departments, recruiterRoles } from '../../data/mockData';
+import {
+  validateEmail,
+  validatePhone,
+  validateStrongPassword,
+  validateName
+} from '../../auth/validation';
 
-export function CreateRecruiterModal({ onClose }) {
-  const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', role:'', department:'', password:'', sendCredentials: true });
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({});
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const validate = () => {
-    const e = {};
-    if (!form.firstName.trim()) e.firstName = 'Required';
-    if (!form.lastName.trim())  e.lastName  = 'Required';
-    if (!form.email.trim())     e.email     = 'Required';
-    if (!form.phone.trim())     e.phone     = 'Required';
-    if (!form.role)             e.role      = 'Required';
-    if (!form.department)       e.department= 'Required';
-    if (!form.password)         e.password  = 'Required';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-  const handleSubmit = () => { if (validate()) { alert('Recruiter created successfully!'); onClose(); } };
-
-  const InputField = ({ label, name, type='text', placeholder, icon }) => (
+const InputField = ({ label, name, type='text', placeholder, icon, form, set, errors }) => (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1.5">{label} <span className="text-red-500">*</span></label>
       <div className="relative">
@@ -33,6 +20,33 @@ export function CreateRecruiterModal({ onClose }) {
       {errors[name] && <p className="text-xs text-red-500 mt-1">{errors[name]}</p>}
     </div>
   );
+export function CreateRecruiterModal({ onClose }) {
+  const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', role:'', department:'', password:'', sendCredentials: true });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+const validate = () => {
+  const e = {};
+
+  e.firstName = validateName(form.firstName, "First name");
+  e.lastName = validateName(form.lastName, "Last name");
+  e.email = validateEmail(form.email);
+  e.phone = validatePhone(form.phone);
+  e.password = validateStrongPassword(form.password);
+
+  if (!form.role) e.role = "Recruiter role is required";
+  if (!form.department) e.department = "Department is required";
+
+  Object.keys(e).forEach((key) => {
+    if (!e[key]) delete e[key];
+  });
+
+  setErrors(e);
+  return Object.keys(e).length === 0;
+};
+  const handleSubmit = () => { if (validate()) { alert('Recruiter created successfully!'); onClose(); } };
+
+  
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -56,10 +70,46 @@ export function CreateRecruiterModal({ onClose }) {
           <section>
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4 pb-2 border-b border-gray-100">Personal Information</h3>
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="First Name" name="firstName" placeholder="Enter first name" icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>} />
-              <InputField label="Last Name" name="lastName" placeholder="Enter last name" icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>} />
-              <InputField label="Work Email Address" name="email" type="email" placeholder="email@company.com" icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>} />
-              <InputField label="Phone Number" name="phone" placeholder="+1 (555) 000-0000" icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>} />
+             <InputField
+  label="First Name"
+  name="firstName"
+  form={form}
+  set={set}
+  errors={errors}
+  placeholder="Enter first name"
+  icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>}
+/>
+
+<InputField
+  label="Last Name"
+  name="lastName"
+  form={form}
+  set={set}
+  errors={errors}
+  placeholder="Enter last name"
+  icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>}
+/>
+
+<InputField
+  label="Work Email Address"
+  name="email"
+  type="email"
+  form={form}
+  set={set}
+  errors={errors}
+  placeholder="email@company.com"
+  icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>}
+/>
+
+<InputField
+  label="Phone Number"
+  name="phone"
+  form={form}
+  set={set}
+  errors={errors}
+  placeholder="Enter 10-digit phone number"
+  icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>}
+/>
             </div>
           </section>
           <section>

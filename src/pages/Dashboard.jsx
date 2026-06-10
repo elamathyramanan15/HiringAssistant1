@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
-import { statsData, pipelineData, statusData, allRecruiters } from '../data/mockData';
+import { statsData, pipelineData, statusData, allRecruiters } from '../../frontend/src/data/mockData';
 import { CreateRecruiterModal } from '../components/recruiters/CreateRecruiterModal';
 
 const iconMap = {

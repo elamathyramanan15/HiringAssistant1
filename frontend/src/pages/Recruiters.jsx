@@ -11,8 +11,10 @@ export default function Recruiters() {
   const [deptFilter, setDept]     = useState('');
   const [statusFilter, setStatus] = useState('');
   const [page, setPage]           = useState(1);
+ const [openMenu, setOpenMenu]   = useState(null);
+ const [recruiterList, setRecruiterList] = useState(allRecruiters);
 
-  const filtered = allRecruiters.filter(r => {
+  const filtered = recruiterList.filter(r => {
     const matchSearch = r.name.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase());
     const matchDept   = !deptFilter   || r.dept   === deptFilter;
     const matchStatus = !statusFilter || r.status === statusFilter;
@@ -20,6 +22,18 @@ export default function Recruiters() {
   });
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const updateRecruiterStatus = (email, status) => {
+  setRecruiterList(prev =>
+    prev.map(r => r.email === email ? { ...r, status } : r)
+  );
+  setOpenMenu(null);
+};
+
+const deleteRecruiter = (email) => {
+  if (!window.confirm("Delete this recruiter?")) return;
+  setRecruiterList(prev => prev.filter(r => r.email !== email));
+  setOpenMenu(null);
+};
 
   return (
     <main className="p-6 bg-gray-50 min-h-[calc(100vh-65px)]">
@@ -102,9 +116,33 @@ export default function Recruiters() {
                       {r.status}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-center">
-                    <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><MoreVertical size={16} className="text-gray-400"/></button>
-                  </td>
+                 <td className="py-4 px-4 text-center">
+  <div className="relative inline-block">
+    <button
+      onClick={() => setOpenMenu(openMenu === r.email ? null : r.email)}
+      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+    >
+      <MoreVertical size={16} className="text-gray-400"/>
+    </button>
+
+    {openMenu === r.email && (
+      <div className="absolute right-0 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
+        <button onClick={() => updateRecruiterStatus(r.email, 'Active')} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+          Activate
+        </button>
+        <button onClick={() => updateRecruiterStatus(r.email, 'Inactive')} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+          Deactivate
+        </button>
+        <button onClick={() => updateRecruiterStatus(r.email, 'Blocked')} className="block w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50">
+          Block Account
+        </button>
+        <button onClick={() => deleteRecruiter(r.email)} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+          Delete
+        </button>
+      </div>
+    )}
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>

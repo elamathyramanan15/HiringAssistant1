@@ -5,6 +5,7 @@ import CreatePasswordPage from './CreatePasswordPage';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './auth/ProtectedRoute';
 import SessionTimeout from './auth/SessionTimeout';
+import Shell from './components/Shell';
 
 export default function App() {
   const hasResetToken = new URLSearchParams(window.location.search).get('token');
