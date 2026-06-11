@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SESSION_TIMEOUT = 60 * 1000;
+const SESSION_TIMEOUT = 600 * 1000;
 
 function SessionTimeout({ setView }) {
   useEffect(() => {
