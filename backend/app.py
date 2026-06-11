@@ -23,13 +23,20 @@ app.config["FRONTEND_RESET_URL"] = os.getenv(
     "https://hiringassistant.vercel.app"
 )
 
-CORS(app, resources={r"/api/*": {"origins": [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://hiringassistant.vercel.app"
-]}})
+CORS(
+    app,
+    resources={r"/api/*": {
+        "origins": [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://hiringassistant.vercel.app",
+            "https://hiringassistant-822ix0hy0-elamathyramanan15s-projects.vercel.app"
+        ]
+    }},
+    supports_credentials=True
+)
 
 JWTManager(app)
 db.init_app(app)
