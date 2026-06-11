@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './auth/ProtectedRoute';
 import SessionTimeout from './auth/SessionTimeout';
 import Shell from './components/Shell';
+import RecruiterShell from './components/RecruiterShell';
 
 export default function App() {
   const hasResetToken = new URLSearchParams(window.location.search).get('token');
@@ -38,11 +39,15 @@ export default function App() {
         {view === 'forgot' && <ForgotPasswordPage setView={setView} />}
         {view === 'create' && <CreatePasswordPage setView={setView} />}
 
-        {view === 'dashboard' && (
-          <ProtectedRoute allowedRoles={['Admin', 'Recruiter']} setView={setView}>
-            <Dashboard setView={setView} />
-          </ProtectedRoute>
-        )}
+       {view === 'dashboard' && (
+  <ProtectedRoute allowedRoles={['Admin', 'Recruiter']} setView={setView}>
+    {localStorage.getItem('role') === 'Recruiter' ? (
+      <RecruiterShell setView={setView} />
+    ) : (
+      <Shell setView={setView} />
+    )}
+  </ProtectedRoute>
+)}
       </div>
     </div>
   );

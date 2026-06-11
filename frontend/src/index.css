@@ -6,4 +6,17 @@
 
 * {
   font-family: 'Plus Jakarta Sans', sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  background: #F3F4F6;
+}
+
+a {
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
 }
