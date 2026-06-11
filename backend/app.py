@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
+import re
 
 from config.database import db
 from routes.auth_routes import auth_bp
@@ -32,7 +33,7 @@ CORS(
             "http://localhost:5173",
             "http://127.0.0.1:5173",
             "https://hiringassistant.vercel.app",
-            "https://hiringassistant-822ix0hy0-elamathyramanan15s-projects.vercel.app"
+            re.compile(r"https://hiringassistant-.*-elamathyramanan15s-projects\.vercel\.app")
         ]
     }},
     supports_credentials=True
