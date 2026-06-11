@@ -186,7 +186,9 @@ def create_recruiter(data):
     db.session.add(recruiter)
     db.session.commit()
 
-    if data.get("sendCredentials") is True:
+    print("SEND CREDENTIALS VALUE:", data.get("sendCredentials"))
+
+    if data.get("sendCredentials", True):
         recruiter_name = f"{recruiter.first_name} {recruiter.last_name or ''}".strip()
 
         send_recruiter_credentials_email(
@@ -227,5 +229,6 @@ def delete_recruiter(user_id):
 
     db.session.delete(recruiter)
     db.session.commit()
+    
 
     return True, "Recruiter deleted successfully"
