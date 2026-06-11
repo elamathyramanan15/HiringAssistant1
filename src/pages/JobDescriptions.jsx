@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Search, Calendar, MoreVertical, Plus,
   ChevronLeft, ChevronRight, Edit2, Users,
-  Trash2, Download, ChevronDown, X
+  Trash2, Download, ChevronDown, X, Upload
 } from 'lucide-react'
 
 const defaultJobs = [
@@ -52,39 +52,37 @@ const statusConfig = {
 
 export default function JobDescriptions() {
   const navigate = useNavigate()
-  const [jobs, setJobs]               = useState(defaultJobs)
-  const [search, setSearch]           = useState('')
+  const [jobs, setJobs]                 = useState(defaultJobs)
+  const [search, setSearch]             = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
-  const [openMenu, setOpenMenu]       = useState(null)
+  const [statusDropOpen, setStatusDropOpen] = useState(false)
+  const [openMenu, setOpenMenu]         = useState(null)
   const [openStatusId, setOpenStatusId] = useState(null)
-  const menuRef = useRef(null)
+  const menuRef    = useRef(null)
+  const statusRef  = useRef(null)
 
-  // Load from localStorage
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('jobs') || '[]')
     if (saved.length > 0) {
       const mapped = saved.map(j => ({
-        id:          j.id,
-        title:       j.title,
-        team:        j.dept,
-        location:    'Remote',
-        type:        'Full-time',
-        skills:      j.skills || [],
-        applied:     j.applied || 0,
-        status:      j.status || 'Open',
-        createdDate: j.date || 'Recently',
-        endDate:     j.endDate || '—',
+        id: j.id, title: j.title, team: j.dept,
+        location: 'Remote', type: 'Full-time',
+        skills: j.skills || [], applied: j.applied || 0,
+        status: j.status || 'Open',
+        createdDate: j.date || 'Recently', endDate: j.endDate || '—',
       }))
       setJobs([...mapped, ...defaultJobs])
     }
   }, [])
 
-  // Close menus on outside click
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpenMenu(null)
         setOpenStatusId(null)
+      }
+      if (statusRef.current && !statusRef.current.contains(e.target)) {
+        setStatusDropOpen(false)
       }
     }
     document.addEventListener('mousedown', handler)
@@ -108,7 +106,6 @@ export default function JobDescriptions() {
   const handleDelete = (jobId) => {
     if (window.confirm('Delete this job? This cannot be undone.')) {
       setJobs(prev => prev.filter(j => j.id !== jobId))
-      // also remove from localStorage
       const saved = JSON.parse(localStorage.getItem('jobs') || '[]')
       localStorage.setItem('jobs', JSON.stringify(saved.filter(j => j.id !== jobId)))
     }
@@ -120,12 +117,12 @@ export default function JobDescriptions() {
     const blob = new Blob([content], { type: 'text/plain' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
-    a.href     = url
-    a.download = `${job.title.replace(/\s+/g, '_')}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
+    a.href = url; a.download = `${job.title.replace(/\s+/g, '_')}.txt`
+    a.click(); URL.revokeObjectURL(url)
     setOpenMenu(null)
   }
+
+  const statusLabel = statusFilter === 'All' ? 'Status: All' : statusFilter
 
   return (
     <div style={{ flex: 1, background: '#F3F4F6', minHeight: '100vh', padding: '32px' }}>
@@ -149,8 +146,7 @@ export default function JobDescriptions() {
             fontSize: '14px', fontWeight: 500, cursor: 'pointer',
           }}
         >
-          <Plus size={16} />
-          Create Job Description
+          <Plus size={16} /> Create Job Description
         </button>
       </div>
 
@@ -178,24 +174,56 @@ export default function JobDescriptions() {
           )}
         </div>
 
-        {/* Status Filter Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {['All', 'Open', 'Draft', 'Closed'].map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              style={{
-                padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
-                fontWeight: 500, cursor: 'pointer', border: '1px solid',
-                borderColor: statusFilter === s ? '#7C3AED' : '#E5E7EB',
-                background:  statusFilter === s ? '#F3F0FF' : '#fff',
-                color:       statusFilter === s ? '#7C3AED' : '#6B7280',
-                transition: 'all 0.15s',
-              }}
-            >
-              {s === 'All' ? 'Status: All' : s}
-            </button>
-          ))}
+        {/* Status Filter — single dropdown */}
+        <div ref={statusRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setStatusDropOpen(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '9px 16px', borderRadius: '8px', fontSize: '13px',
+              fontWeight: 500, cursor: 'pointer',
+              border: `1px solid ${statusFilter !== 'All' ? '#7C3AED' : '#E5E7EB'}`,
+              background: statusFilter !== 'All' ? '#F3F0FF' : '#fff',
+              color: statusFilter !== 'All' ? '#7C3AED' : '#6B7280',
+              minWidth: '140px', justifyContent: 'space-between',
+            }}
+          >
+            <span>{statusLabel}</span>
+            <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: statusDropOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+          </button>
+
+          {statusDropOpen && (
+            <div style={{
+              position: 'absolute', top: '44px', left: 0,
+              background: '#fff', border: '1px solid #E5E7EB',
+              borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+              zIndex: 200, minWidth: '150px', overflow: 'hidden',
+            }}>
+              {['All', 'Open', 'Draft', 'Closed'].map(s => (
+                <div
+                  key={s}
+                  onClick={() => { setStatusFilter(s); setStatusDropOpen(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '10px 16px', fontSize: '13px', cursor: 'pointer',
+                    fontWeight: statusFilter === s ? 600 : 400,
+                    background: statusFilter === s ? '#F3F0FF' : '#fff',
+                    color: s === 'All' ? '#374151' : statusConfig[s]?.color || '#374151',
+                  }}
+                  onMouseEnter={e => { if (statusFilter !== s) e.currentTarget.style.background = '#F9FAFB' }}
+                  onMouseLeave={e => { if (statusFilter !== s) e.currentTarget.style.background = '#fff' }}
+                >
+                  {s !== 'All' && (
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusConfig[s].dot, flexShrink: 0 }} />
+                  )}
+                  {s === 'All' ? 'All Statuses' : s}
+                  {statusFilter === s && (
+                    <span style={{ marginLeft: 'auto', color: '#7C3AED', fontSize: 12 }}>✓</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Date Range */}
@@ -205,8 +233,7 @@ export default function JobDescriptions() {
           fontWeight: 500, cursor: 'pointer', border: '1px solid #E5E7EB',
           background: '#fff', color: '#6B7280',
         }}>
-          <Calendar size={14} />
-          Date Range
+          <Calendar size={14} /> Date Range
         </button>
       </div>
 
@@ -236,10 +263,7 @@ export default function JobDescriptions() {
             ) : filtered.map((job, i) => (
               <tr
                 key={job.id}
-                style={{
-                  borderBottom: i < filtered.length - 1 ? '1px solid #F9FAFB' : 'none',
-                  position: 'relative',
-                }}
+                style={{ borderBottom: i < filtered.length - 1 ? '1px solid #F9FAFB' : 'none', position: 'relative' }}
               >
                 {/* Job Title */}
                 <td style={{ padding: '16px 14px', verticalAlign: 'middle', minWidth: '220px' }}>
@@ -290,7 +314,7 @@ export default function JobDescriptions() {
                   </div>
                 </td>
 
-                {/* Status — clickable dropdown */}
+                {/* Status — row-level dropdown */}
                 <td style={{ padding: '16px 14px', verticalAlign: 'middle', position: 'relative' }}>
                   <div
                     onClick={() => setOpenStatusId(openStatusId === job.id ? null : job.id)}
@@ -304,15 +328,11 @@ export default function JobDescriptions() {
                       userSelect: 'none',
                     }}
                   >
-                    <span style={{
-                      width: '6px', height: '6px', borderRadius: '50%',
-                      background: statusConfig[job.status].dot, flexShrink: 0,
-                    }} />
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusConfig[job.status].dot, flexShrink: 0 }} />
                     {job.status}
                     <ChevronDown size={11} />
                   </div>
 
-                  {/* Status Dropdown */}
                   {openStatusId === job.id && (
                     <div style={{
                       position: 'absolute', top: '48px', left: '14px',
@@ -348,9 +368,7 @@ export default function JobDescriptions() {
                 </td>
 
                 {/* End Date */}
-                <td style={{ padding: '16px 14px', verticalAlign: 'middle', fontSize: '13px', whiteSpace: 'nowrap',
-                  color: job.status === 'Closed' ? '#EF4444' : '#6B7280',
-                }}>
+                <td style={{ padding: '16px 14px', verticalAlign: 'middle', fontSize: '13px', whiteSpace: 'nowrap', color: job.status === 'Closed' ? '#EF4444' : '#6B7280' }}>
                   {job.endDate}
                 </td>
 
@@ -370,7 +388,6 @@ export default function JobDescriptions() {
                     <MoreVertical size={16} />
                   </button>
 
-                  {/* Actions Dropdown */}
                   {openMenu === job.id && (
                     <div style={{
                       position: 'absolute', top: '44px', right: '14px',
@@ -381,31 +398,21 @@ export default function JobDescriptions() {
                       {/* Edit */}
                       <div
                         onClick={() => { navigate('/create-job'); setOpenMenu(null) }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '10px',
-                          padding: '11px 16px', fontSize: '13px', cursor: 'pointer',
-                          color: '#374151',
-                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', cursor: 'pointer', color: '#374151' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
                         onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                       >
-                        <Edit2 size={14} color="#7C3AED" />
-                        Edit Job
+                        <Edit2 size={14} color="#7C3AED" /> Edit Job
                       </div>
 
-                      {/* View Candidates */}
+                      {/* Upload Resumes — navigate to UploadResumes */}
                       <div
-                        onClick={() => { navigate('/candidates'); setOpenMenu(null) }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '10px',
-                          padding: '11px 16px', fontSize: '13px', cursor: 'pointer',
-                          color: '#374151',
-                        }}
+                        onClick={() => { navigate('/upload'); setOpenMenu(null) }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', cursor: 'pointer', color: '#374151' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
                         onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                       >
-                        <Users size={14} color="#0EA5E9" />
-                        View Candidates
+                        <Upload size={14} color="#7C3AED" /> Upload Resumes
                       </div>
 
                       <div style={{ height: '1px', background: '#F3F4F6', margin: '2px 0' }} />
@@ -413,16 +420,11 @@ export default function JobDescriptions() {
                       {/* Download */}
                       <div
                         onClick={() => handleDownload(job)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '10px',
-                          padding: '11px 16px', fontSize: '13px', cursor: 'pointer',
-                          color: '#374151',
-                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', cursor: 'pointer', color: '#374151' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
                         onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                       >
-                        <Download size={14} color="#10B981" />
-                        Download JD
+                        <Download size={14} color="#10B981" /> Download JD
                       </div>
 
                       <div style={{ height: '1px', background: '#F3F4F6', margin: '2px 0' }} />
@@ -430,16 +432,11 @@ export default function JobDescriptions() {
                       {/* Delete */}
                       <div
                         onClick={() => handleDelete(job.id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '10px',
-                          padding: '11px 16px', fontSize: '13px', cursor: 'pointer',
-                          color: '#EF4444',
-                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', cursor: 'pointer', color: '#EF4444' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
                         onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                       >
-                        <Trash2 size={14} color="#EF4444" />
-                        Delete Job
+                        <Trash2 size={14} color="#EF4444" /> Delete Job
                       </div>
                     </div>
                   )}
@@ -450,28 +447,15 @@ export default function JobDescriptions() {
         </table>
 
         {/* Pagination */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px', borderTop: '1px solid #F3F4F6',
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #F3F4F6' }}>
           <span style={{ fontSize: '13px', color: '#9CA3AF' }}>
             Showing {filtered.length} of {jobs.length} jobs
           </span>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button style={{
-              padding: '6px 14px', borderRadius: '6px', fontSize: '13px',
-              border: '1px solid #E5E7EB', background: '#fff',
-              color: '#6B7280', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '4px',
-            }}>
+            <button style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '13px', border: '1px solid #E5E7EB', background: '#fff', color: '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <ChevronLeft size={14} /> Prev
             </button>
-            <button style={{
-              padding: '6px 14px', borderRadius: '6px', fontSize: '13px',
-              border: '1px solid #7C3AED', background: '#7C3AED',
-              color: '#fff', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '4px',
-            }}>
+            <button style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '13px', border: '1px solid #7C3AED', background: '#7C3AED', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
               Next <ChevronRight size={14} />
             </button>
           </div>
