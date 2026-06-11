@@ -36,7 +36,7 @@ export const statusData = [
   { name: 'Hired',     value: 145, color: '#EDE9FE' },
 ];
 
-export const departments = ['Engineering','Product','Design','Marketing','HR','Finance','Operations','Sales'];
+export const departments = ['Engineering','Product','Design','Marketing','HR','Finance','Operations','Sales','IT Hiring'];
 
 export const recruiterRoles = ['Senior Recruiter','Junior Recruiter','Lead Recruiter','Technical Recruiter','HR Specialist'];
 

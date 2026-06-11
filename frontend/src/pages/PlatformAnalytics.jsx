@@ -1,23 +1,62 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
-import {
-  analyticKpis, analyticPipelineData, analyticAppStatusData,
-  analyticHiringTrendData, analyticSelRejData, analyticSkillData,
-  analyticRecruiterPerfData, analyticAiScoreData, analyticConversionData,
-  analyticJdPerfData, analyticMonthlyRecruiterData, analyticCandidateRecords
-} from '../data/mockData';
+import API from '../api';
 
 export default function PlatformAnalytics() {
   const [searchCand, setSearchCand] = useState('');
   const [statusFilter, setStatusFilter] = useState('All statuses');
 
+  const [analyticKpis, setAnalyticKpis] = useState([]);
+  const [analyticPipelineData, setAnalyticPipelineData] = useState([]);
+  const [analyticAppStatusData, setAnalyticAppStatusData] = useState([]);
+  const [analyticHiringTrendData, setAnalyticHiringTrendData] = useState([]);
+  const [analyticSelRejData, setAnalyticSelRejData] = useState([]);
+  const [analyticSkillData, setAnalyticSkillData] = useState([]);
+  const [analyticRecruiterPerfData, setAnalyticRecruiterPerfData] = useState([]); 
+const [analyticAiScoreData, setAnalyticAiScoreData] = useState([]);
+const [analyticConversionData, setAnalyticConversionData] = useState([]);
+const [analyticJdPerfData, setAnalyticJdPerfData] = useState([]);
+const [analyticMonthlyRecruiterData, setAnalyticMonthlyRecruiterData] = useState([]);
+const [analyticCandidateRecords, setAnalyticCandidateRecords] = useState([]);
+
+useEffect(() => { 
+  fetchAnalyticsData();
+}, []);
+
+const fetchAnalyticsData = async () => {
+  try {
+    const response = await API.get('/analytics/platform');
+    const data = response.data.data || {};
+
+    setAnalyticKpis(data.kpis || []);
+    setAnalyticPipelineData(data.pipeline || []);
+    setAnalyticAppStatusData(data.application_status || []);
+    setAnalyticHiringTrendData(data.hiring_trend || []);
+    setAnalyticSelRejData(data.selection_rejection || []);
+    setAnalyticSkillData(data.skills || []);
+    setAnalyticRecruiterPerfData(data.recruiter_performance || []);
+    setAnalyticAiScoreData(data.ai_score_distribution || []);
+    setAnalyticConversionData(data.conversion_rate || []);
+    setAnalyticJdPerfData(data.jd_performance || []);
+    setAnalyticMonthlyRecruiterData(data.monthly_recruiters || []);
+    setAnalyticCandidateRecords(data.candidate_records || []);
+  } catch (error) {
+    console.error('Failed to fetch analytics data', error);
+  }
+};
+ 
   const filteredCands = analyticCandidateRecords.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(searchCand.toLowerCase()) || c.jd.toLowerCase().includes(searchCand.toLowerCase());
-    const matchStatus = statusFilter === 'All statuses' || c.status === statusFilter;
+    const matchSearch =
+      (c.name || '').toLowerCase().includes(searchCand.toLowerCase()) ||
+      (c.jd || '').toLowerCase().includes(searchCand.toLowerCase());
+
+    const matchStatus =
+      statusFilter === 'All statuses' || c.status === statusFilter;
+
     return matchSearch && matchStatus;
   });
 
@@ -56,7 +95,7 @@ export default function PlatformAnalytics() {
           <p className="text-sm font-semibold text-gray-800 mb-0.5">Candidate pipeline funnel</p>
           <p className="text-xs text-gray-400 mb-3">Stage-wise drop-off</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={analyticPipelineData} layout="vertical" barSize={14}>
+            <BarChart data={analyticPipelineData.length ? analyticPipelineData : [{ stage: 'No data', count: 0 }]} layout="vertical" barSize={14}>
               <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="stage" tick={{ fontSize: 11, fill: '#374151' }} axisLine={false} tickLine={false} width={80} />
               <Tooltip contentStyle={chartTooltipStyle} />
@@ -78,7 +117,7 @@ export default function PlatformAnalytics() {
           </div>
           <ResponsiveContainer width="100%" height={170}>
             <PieChart>
-              <Pie data={analyticAppStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value" stroke="none">
+              <Pie data={analyticAppStatusData.length ? analyticAppStatusData : [{ name: 'No data', value: 100, color: '#e5e7eb' }]} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value" stroke="none">
                 {analyticAppStatusData.map(e => <Cell key={e.name} fill={e.color} />)}
               </Pie>
               <Tooltip contentStyle={chartTooltipStyle} />
@@ -93,7 +132,7 @@ export default function PlatformAnalytics() {
           <p className="text-sm font-semibold text-gray-800 mb-0.5">Monthly hiring trend</p>
           <p className="text-xs text-gray-400 mb-3">Applications vs selections over time</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={analyticHiringTrendData}>
+            <BarChart data={analyticHiringTrendData.length ? analyticHiringTrendData : [{ month: 'No data', Applications: 0, Selections: 0 }]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
@@ -109,7 +148,7 @@ export default function PlatformAnalytics() {
           <p className="text-sm font-semibold text-gray-800 mb-0.5">Selection vs rejection trend</p>
           <p className="text-xs text-gray-400 mb-3">Hiring outcomes comparison</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={analyticSelRejData}>
+            <BarChart data={analyticSelRejData.length ? analyticSelRejData : [{ month: 'No data', Selected: 0, Rejected: 0 }]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
@@ -128,7 +167,7 @@ export default function PlatformAnalytics() {
           <p className="text-sm font-semibold text-gray-800 mb-0.5">Skill distribution</p>
           <p className="text-xs text-gray-400 mb-3">Top 7 skills in candidate pool</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={analyticSkillData} layout="vertical" barSize={14}>
+            <BarChart data={analyticSkillData.length ? analyticSkillData : [{ skill: 'No data', count: 0 }]} layout="vertical" barSize={14}>
               <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="skill" tick={{ fontSize: 11, fill: '#374151' }} axisLine={false} tickLine={false} width={60} />
               <Tooltip contentStyle={chartTooltipStyle} />
@@ -141,7 +180,7 @@ export default function PlatformAnalytics() {
           <p className="text-sm font-semibold text-gray-800 mb-0.5">Recruiter performance</p>
           <p className="text-xs text-gray-400 mb-3">Applications processed per recruiter</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={analyticRecruiterPerfData}>
+            <BarChart data={analyticRecruiterPerfData.length ? analyticRecruiterPerfData : [{ name: 'No data', count: 0 }]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
@@ -158,7 +197,7 @@ export default function PlatformAnalytics() {
           <p className="text-sm font-semibold text-gray-800 mb-0.5">AI score distribution</p>
           <p className="text-xs text-gray-400 mb-3">Candidate quality histogram</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={analyticAiScoreData}>
+            <BarChart data={analyticAiScoreData.length ? analyticAiScoreData : [{ range: 'No data', count: 0 }]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
               <XAxis dataKey="range" tick={{ fontSize: 9, fill: '#6b7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
@@ -176,7 +215,7 @@ export default function PlatformAnalytics() {
           <p className="text-sm font-semibold text-gray-800 mb-0.5">Recruiter conversion rate</p>
           <p className="text-xs text-gray-400 mb-3">Selection rate per recruiter (%)</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={analyticConversionData} layout="vertical" barSize={14}>
+            <BarChart data={analyticConversionData.length ? analyticConversionData : [{ name: 'No data', rate: 0 }]} layout="vertical" barSize={14}>
               <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} unit="%" />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#374151' }} axisLine={false} tickLine={false} width={55} />
               <Tooltip contentStyle={chartTooltipStyle} />
@@ -191,7 +230,7 @@ export default function PlatformAnalytics() {
         <p className="text-sm font-semibold text-gray-800 mb-0.5">JD performance analysis</p>
         <p className="text-xs text-gray-400 mb-3">Applications per job description</p>
         <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={analyticJdPerfData} layout="vertical" barSize={16}>
+          <BarChart data={analyticJdPerfData.length ? analyticJdPerfData : [{ jd: 'No data', count: 0 }]} layout="vertical" barSize={16}>
             <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="jd" tick={{ fontSize: 11, fill: '#374151' }} axisLine={false} tickLine={false} width={130} />
             <Tooltip contentStyle={chartTooltipStyle} />
@@ -205,7 +244,7 @@ export default function PlatformAnalytics() {
         <p className="text-sm font-semibold text-gray-800 mb-0.5">Monthly top recruiters</p>
         <p className="text-xs text-gray-400 mb-3">Candidates processed this month per recruiter</p>
         <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={analyticMonthlyRecruiterData}>
+          <BarChart data={analyticMonthlyRecruiterData.length ? analyticMonthlyRecruiterData : [{ name: 'No data', count: 0 }]}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />

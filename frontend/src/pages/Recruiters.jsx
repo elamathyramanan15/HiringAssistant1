@@ -1,38 +1,90 @@
 import { useState } from 'react';
 import { Plus, Search, Filter, MoreVertical } from 'lucide-react';
 import { CreateRecruiterModal } from '../components/recruiters/CreateRecruiterModal';
-import { allRecruiters, departments } from '../data/mockData';
+import { departments } from '../data/mockData';
+import { useEffect } from 'react';
+import API from '../api';
 
 const PAGE_SIZE = 8;
 
-export default function Recruiters() {
+export default function Recruiters({ globalSearch = '' }) {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch]       = useState('');
   const [deptFilter, setDept]     = useState('');
   const [statusFilter, setStatus] = useState('');
   const [page, setPage]           = useState(1);
  const [openMenu, setOpenMenu]   = useState(null);
- const [recruiterList, setRecruiterList] = useState(allRecruiters);
+ const [recruiterList, setRecruiterList] = useState([]);
 
-  const filtered = recruiterList.filter(r => {
-    const matchSearch = r.name.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase());
-    const matchDept   = !deptFilter   || r.dept   === deptFilter;
-    const matchStatus = !statusFilter || r.status === statusFilter;
-    return matchSearch && matchDept && matchStatus;
-  });
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paged      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const updateRecruiterStatus = (email, status) => {
-  setRecruiterList(prev =>
-    prev.map(r => r.email === email ? { ...r, status } : r)
-  );
-  setOpenMenu(null);
+ useEffect(() => {
+  fetchRecruiters();
+ }, []);
+
+ const fetchRecruiters = async () => {
+  try {
+    const response = await API.get('/dashboard/recruiters');
+    setRecruiterList(response.data.data || []);
+  } catch (error) {
+    console.error('Failed to fetch recruiters', error);
+  }
 };
 
-const deleteRecruiter = (email) => {
+const dynamicDepartments = [
+  ...new Set([
+    ...departments,
+    ...recruiterList.map(r => r.dept).filter(Boolean),
+  ]),
+];
+
+  const filtered = recruiterList.filter(r => {
+  const combinedSearch = search || globalSearch;
+  const searchValue = combinedSearch.toLowerCase();
+
+  const name = r.name || '';
+  const email = r.email || '';
+  const dept = r.dept || '';
+  const status = r.status || '';
+
+  const matchSearch =
+    !searchValue ||
+    name.toLowerCase().includes(searchValue) ||
+    email.toLowerCase().includes(searchValue) ||
+    dept.toLowerCase().includes(searchValue) ||
+    status.toLowerCase().includes(searchValue);
+
+  const matchDept = !deptFilter || dept === deptFilter;
+  const matchStatus =
+  !statusFilter ||
+  status.toUpperCase() === statusFilter.toUpperCase();
+
+  return matchSearch && matchDept && matchStatus;
+});
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged      = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const updateRecruiterStatus = async (userId, status) => {
+    try {
+      await API.post(`/dashboard/recruiters/${userId}/status`, {
+        status,
+      });
+
+      await fetchRecruiters();
+      setOpenMenu(null);
+    } catch (error) {
+      alert(error?.response?.data?.message || 'Failed to update recruiter status');
+    }
+  };
+const deleteRecruiter = async (userId) => {
   if (!window.confirm("Delete this recruiter?")) return;
-  setRecruiterList(prev => prev.filter(r => r.email !== email));
-  setOpenMenu(null);
+
+  try {
+    await API.delete(`/dashboard/recruiters/${userId}`);
+
+    await fetchRecruiters();
+    setOpenMenu(null);
+  } catch (error) {
+    alert(error?.response?.data?.message || 'Failed to delete recruiter');
+  }
 };
 
   return (
@@ -64,7 +116,7 @@ const deleteRecruiter = (email) => {
               <select value={deptFilter} onChange={e => { setDept(e.target.value); setPage(1); }}
                 className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400 appearance-none">
                 <option value="">All Departments</option>
-                {departments.map(d => <option key={d}>{d}</option>)}
+                {dynamicDepartments.map(d => <option key={d}>{d}</option>)}
               </select>
             </div>
           </div>
@@ -75,20 +127,21 @@ const deleteRecruiter = (email) => {
               <select value={statusFilter} onChange={e => { setStatus(e.target.value); setPage(1); }}
                 className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400 appearance-none">
                 <option value="">All Status</option>
-                <option>Active</option>
-                <option>Inactive</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="BLOCKED">Blocked</option>
               </select>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-bold text-gray-900">All Recruiters</h2>
           <p className="text-xs text-gray-400 mt-0.5">Showing {paged.length} of {filtered.length} recruiters</p>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -111,32 +164,33 @@ const deleteRecruiter = (email) => {
                   <td className="py-4 px-4 text-sm font-medium text-gray-900">{r.jobs}</td>
                   <td className="py-4 px-4 text-sm font-medium text-gray-900">{r.candidates}</td>
                   <td className="py-4 px-4">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${r.status==='Active'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-500'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${r.status==='Active'?'bg-green-500':'bg-gray-400'}`}/>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${r.status==='ACTIVE'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-500'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${r.status==='ACTIVE'?'bg-green-500':'bg-gray-400'}`}/>
                       {r.status}
                     </span>
                   </td>
                  <td className="py-4 px-4 text-center">
   <div className="relative inline-block">
     <button
-      onClick={() => setOpenMenu(openMenu === r.email ? null : r.email)}
-      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+  type="button"
+  onClick={() => setOpenMenu(openMenu === r.user_id ? null : r.user_id)}
+  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
     >
       <MoreVertical size={16} className="text-gray-400"/>
     </button>
 
-    {openMenu === r.email && (
-      <div className="absolute right-0 top-10 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
-        <button onClick={() => updateRecruiterStatus(r.email, 'Active')} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+    {openMenu === r.user_id && (
+      <div className="absolute right-0 top-8 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-[9999]">
+       <button onClick={() => updateRecruiterStatus(r.user_id, 'ACTIVE')} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
           Activate
         </button>
-        <button onClick={() => updateRecruiterStatus(r.email, 'Inactive')} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+        <button onClick={() => updateRecruiterStatus(r.user_id, 'INACTIVE')} className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
           Deactivate
         </button>
-        <button onClick={() => updateRecruiterStatus(r.email, 'Blocked')} className="block w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50">
+        <button onClick={() => updateRecruiterStatus(r.user_id, 'BLOCKED')} className="block w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50">
           Block Account
         </button>
-        <button onClick={() => deleteRecruiter(r.email)} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+        <button onClick={() => deleteRecruiter(r.user_id)} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
           Delete
         </button>
       </div>
@@ -168,7 +222,12 @@ const deleteRecruiter = (email) => {
           </div>
         )}
       </div>
-      {showModal && <CreateRecruiterModal onClose={() => setShowModal(false)}/>}
+      {showModal && (
+  <CreateRecruiterModal
+    onClose={() => setShowModal(false)}
+    onCreated={fetchRecruiters}
+  />
+)}
     </main>
   );
 }

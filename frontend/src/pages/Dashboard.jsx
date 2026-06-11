@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   Users, UserCheck, Briefcase, Calendar,
-  Search, Bell,
+  Search,
   LayoutDashboard, BarChart3, Settings, LogOut,
-  Plus, TrendingUp, MoreVertical
+  Plus, TrendingUp
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -25,15 +25,21 @@ import PlatformAnalytics from './PlatformAnalytics';
 import SettingsPage from './Settings';
 
 export default function Dashboard({ setView }) {
-  const [activePage, setActivePage] = useState('Dashboard');
+  const [activePage, setActivePage] = useState(
+  localStorage.getItem('activePage') || 'Dashboard'
+);
   const [showModal, setShowModal] = useState(false);
   const [statsData, setStatsData] = useState([]);
   const [pipelineData, setPipelineData] = useState([]);
   const [statusData, setStatusData] = useState([]);
   const [recruiters, setRecruiters] = useState([]);
+  const [globalSearch, setGlobalSearch] = useState('');
+  
 
 
-  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const user = JSON.parse(
+  localStorage.getItem('user') || sessionStorage.getItem('user') || '{}'
+);
   const displayName = `${user.first_name || 'Admin'} ${user.last_name || 'User'}`.trim();
 
   useEffect(() => {
@@ -86,6 +92,10 @@ export default function Dashboard({ setView }) {
     setView('login');
   };
 
+ 
+
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       <aside className="fixed left-0 top-0 h-screen w-[250px] bg-white border-r border-gray-200 z-30 flex flex-col">
@@ -107,9 +117,11 @@ export default function Dashboard({ setView }) {
                 key={item.label}
                 href="#"
                onClick={(e) => {
-  e.preventDefault();
-  setActivePage(item.label);
-}}
+                 e.preventDefault();
+                 setActivePage(item.label);
+                 localStorage.setItem('activePage', item.label);
+                 setGlobalSearch('');
+               }}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   activePage === item.label
                     ? 'bg-violet-100 text-violet-700'
@@ -136,21 +148,20 @@ export default function Dashboard({ setView }) {
 
       <div className="ml-[250px]">
         <header className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-          <div className="relative w-full max-w-md">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search recruiters, candidates, jobs..."
-              className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300"
-            />
-          </div>
+          {activePage !== 'Settings' && (
+  <div className="relative w-full max-w-md">
+    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+    <input
+      type="text"
+      placeholder="Search recruiters, candidates, jobs..."
+      value={globalSearch}
+      onChange={(e) => setGlobalSearch(e.target.value)}
+      className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300"
+    />
+  </div>
+)}
 
           <div className="flex items-center gap-4 ml-6">
-            <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
-              <Bell size={20} className="text-gray-500" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
-
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-purple-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
                 {displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -164,7 +175,7 @@ export default function Dashboard({ setView }) {
         </header>
 
        <main className="p-6 bg-gray-50 min-h-[calc(100vh-65px)]">
-  {activePage === 'Recruiters' && <Recruiters />}
+  {activePage === 'Recruiters' && <Recruiters globalSearch={globalSearch} />}
   {activePage === 'Platform Analytics' && <PlatformAnalytics />}
   {activePage === 'Settings' && <SettingsPage setView={setView} />}
 
@@ -218,7 +229,10 @@ export default function Dashboard({ setView }) {
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={pipelineData} barGap={4}>
+                <BarChart
+                  data={pipelineData.length ? pipelineData : [{ month: 'No data', Candidates: 0, Hired: 0 }]}
+                  barGap={4}
+                >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
@@ -237,9 +251,18 @@ export default function Dashboard({ setView }) {
               </div>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={3} dataKey="value" stroke="none">
-                    {statusData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
+                  <Pie
+                    data={statusData.length ? statusData : [{ name: 'No data', value: 100, color: '#e5e7eb' }]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {(statusData.length ? statusData : [{ name: 'No data', value: 100, color: '#e5e7eb' }]).map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '13px' }} />
@@ -274,12 +297,24 @@ export default function Dashboard({ setView }) {
                     <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider pb-3">Department</th>
                     <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider pb-3">Active Jobs</th>
                     <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider pb-3">Candidates Processed</th>
-                    <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider pb-3">Status</th>
-                    <th className="text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wider pb-3 pr-2">Actions</th>
+                    
+                    
                   </tr>
                 </thead>
                 <tbody>
-                  {recruiters.map((r) => (
+                  {recruiters
+  .filter((r) => {
+    const searchValue = globalSearch.toLowerCase();
+
+    if (!searchValue) return true;
+
+    return (
+      r.name?.toLowerCase().includes(searchValue) ||
+      r.dept?.toLowerCase().includes(searchValue) ||
+      r.status?.toLowerCase().includes(searchValue)
+    );
+  })
+  .map((r) => (
                     <tr key={r.user_id} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
                       <td className="py-3.5 pl-2">
                         <div className="flex items-center gap-3">
@@ -292,20 +327,6 @@ export default function Dashboard({ setView }) {
                       <td className="py-3.5 text-sm text-gray-600">{r.dept}</td>
                       <td className="py-3.5 text-sm text-gray-900 font-medium">{r.jobs}</td>
                       <td className="py-3.5 text-sm text-gray-900 font-medium">{r.candidates}</td>
-                      <td className="py-3.5">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          r.status?.toLowerCase() === 'active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 text-right pr-2">
-                        <button className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
-                          <MoreVertical size={16} className="text-gray-400" />
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>

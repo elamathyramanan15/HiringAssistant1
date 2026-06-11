@@ -9,8 +9,15 @@ import Shell from './components/Shell';
 
 export default function App() {
   const hasResetToken = new URLSearchParams(window.location.search).get('token');
-
-  const [view, setView] = useState(hasResetToken ? 'create' : 'login');
+  const token =
+  localStorage.getItem('access_token') ||
+  sessionStorage.getItem('access_token') ||
+  localStorage.getItem('token') ||
+  sessionStorage.getItem('token');
+  
+  const [view, setView] = useState(
+    hasResetToken ? 'create' : token ? 'dashboard' : 'login'
+);
 
   return (
     <div className={view === 'dashboard' ? 'min-h-screen w-screen' : 'h-screen w-screen overflow-hidden'}>

@@ -1,14 +1,45 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Camera, Lock, RefreshCw, LogOut, Eye, EyeOff } from 'lucide-react';
 import { PasswordChecklist } from '../components/shared/PasswordChecklist';
 
 export default function Settings({ setView }) {
-  const [profile, setProfile] = useState({ firstName: 'Admin', lastName: 'User', email: 'admin@gmail.com', phone: '1234567890', role: 'Administrator' });
+  const getStoredUser = () => {
+    return JSON.parse(
+      localStorage.getItem('user') ||
+      sessionStorage.getItem('user') ||
+      '{}'
+    );
+  };
+
+  const getProfileFromStorage = () => {
+    const storedUser = getStoredUser();
+
+    return {
+      firstName: storedUser.first_name || '',
+      lastName: storedUser.last_name || '',
+      email: storedUser.email || '',
+      phone: storedUser.phone_number || storedUser.phone || '',
+      role: storedUser.role || '',
+    };
+  };
+
+  const [profile, setProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: '',
+  });
+
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew]         = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [savedMsg, setSavedMsg]       = useState('');
+  const [savedMsg, setSavedMsg] = useState('');
+
+  useEffect(() => {
+    setProfile(getProfileFromStorage());
+  }, []);
 
   const handleSave = () => {
     setSavedMsg('Changes saved successfully!');
@@ -21,6 +52,37 @@ export default function Settings({ setView }) {
     alert('Password reset successfully!');
     setPasswords({ current: '', newPass: '', confirm: '' });
   };
+
+  const handleCancel = () => {
+    setProfile(getProfileFromStorage());
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
+    localStorage.removeItem('email');
+
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('role');
+    sessionStorage.removeItem('email');
+
+    setView && setView('login');
+  };
+
+  const avatarInitials =
+    `${profile.firstName?.[0] || ''}${profile.lastName?.[0] || ''}`.toUpperCase() || 'U';
+
+  const displayName =
+    `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'User';
+
+  const displayRole =
+    profile.role
+      ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1).toLowerCase()
+      : 'User';
 
   const SectionCard = ({ icon, title, subtitle, children }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -65,11 +127,15 @@ export default function Settings({ setView }) {
         >
           {/* Avatar row */}
           <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">AU</div>
-            <div className="flex-1">
-              <p className="font-bold text-gray-900 text-base">{profile.firstName} {profile.lastName}</p>
-              <p className="text-sm text-gray-500">{profile.role}</p>
+            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+              {avatarInitials}
             </div>
+
+            <div className="flex-1">
+              <p className="font-bold text-gray-900 text-base">{displayName}</p>
+              <p className="text-sm text-gray-500">{displayRole}</p>
+            </div>
+
             <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
               <Camera size={15}/>
               Upload photo
@@ -101,13 +167,13 @@ export default function Settings({ setView }) {
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
-            <input value={profile.role} readOnly
+            <input value={displayRole} readOnly
               className="w-full max-w-xs px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-100 text-sm text-gray-500 cursor-not-allowed" />
           </div>
 
           {savedMsg && <p className="text-sm text-green-600 font-medium mb-3">{savedMsg}</p>}
           <div className="flex gap-3">
-            <button onClick={() => setProfile({ firstName: 'Admin', lastName: 'User', email: 'admin@gmail.com', phone: '1234567890', role: 'Administrator' })}
+            <button onClick={handleCancel}
               className="px-5 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
             <button onClick={handleSave}
               className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-700 rounded-lg hover:bg-purple-800 transition-colors">Save Changes</button>
@@ -153,7 +219,10 @@ export default function Settings({ setView }) {
                   <p className="text-xs text-gray-500">Sync latest platform data</p>
                 </div>
               </div>
-              <button onClick={() => alert('Data refreshed!')}
+              <button onClick={() => {
+                setProfile(getProfileFromStorage());
+                alert('Data refreshed!');
+              }}
                 className="px-4 py-2 text-sm font-semibold text-gray-800 border-2 border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
                 Refresh
               </button>
@@ -170,7 +239,7 @@ export default function Settings({ setView }) {
                   <p className="text-xs text-gray-500">Log out of your current session</p>
                 </div>
               </div>
-              <button onClick={() => setView && setView('login')}
+              <button onClick={handleSignOut}
                 className="px-4 py-2 text-sm font-semibold text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-50 transition-colors">
                 Sign out
               </button>

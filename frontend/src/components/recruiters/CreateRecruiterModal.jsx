@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import API from '../../api';
 import { PasswordChecklist } from '../shared/PasswordChecklist';
 import { departments, recruiterRoles } from '../../data/mockData';
 import {
@@ -20,7 +21,7 @@ const InputField = ({ label, name, type='text', placeholder, icon, form, set, er
       {errors[name] && <p className="text-xs text-red-500 mt-1">{errors[name]}</p>}
     </div>
   );
-export function CreateRecruiterModal({ onClose }) {
+export function CreateRecruiterModal({ onClose, onCreated }) {    
   const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', role:'', department:'', password:'', sendCredentials: true });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -44,7 +45,32 @@ const validate = () => {
   setErrors(e);
   return Object.keys(e).length === 0;
 };
-  const handleSubmit = () => { if (validate()) { alert('Recruiter created successfully!'); onClose(); } };
+  const handleSubmit = async () => {
+  if (!validate()) return;
+
+  try {
+    await API.post('/dashboard/recruiters', {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      email: form.email,
+      phone: form.phone,
+      role: form.role,
+      department: form.department,
+      password: form.password,
+      sendCredentials: form.sendCredentials,
+    });
+
+    alert('Recruiter created successfully!');
+
+    if (onCreated) {
+      onCreated();
+    }
+
+    onClose();
+  } catch (error) {
+    alert(error?.response?.data?.message || 'Failed to create recruiter');
+  }
+};
 
   
 

@@ -71,8 +71,11 @@ export default function LoginPage({ setView }) {
       storage.setItem('role', response.data.data.user.role);
       storage.setItem('email', email);
 
+      localStorage.setItem('activePage', 'Dashboard');
+
       setFailedAttempts(0);
       setView('dashboard');
+      
     } catch (error) {
       const errorData = error?.response?.data?.data;
 
