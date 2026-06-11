@@ -2,7 +2,6 @@ import { useState } from 'react';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './ForgotPasswordPage';
 import CreatePasswordPage from './CreatePasswordPage';
-import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './auth/ProtectedRoute';
 import SessionTimeout from './auth/SessionTimeout';
 import Shell from './components/Shell';

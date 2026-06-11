@@ -1,26 +1,25 @@
-// App.jsx
-import { Routes, Route, useNavigate } from 'react-router-dom'
 
 import RecruiterSidebar from './layout/RecruiterSidebar'
 import RecruiterHeader from './layout/RecruiterHeader'
-import RecruiterDashboard from './pages/RecruiterDashboard'
-import CreateJobDescription from './pages/CreateJobDescription'
-import JobDescriptions from './pages/JobDescriptions'   // already imported ✅
-import Candidates from './pages/Candidates'
-import UploadResumes from './pages/UploadResumes'
-import AiScreening from './pages/AiScreening'
-import Interviews from './pages/Interviews'
-import MyProfile from './pages/MyProfile'
-import CandidateProfile from './pages/CandidateProfile'
-import ScheduleInterview from './pages/ScheduleInterview'
+import { Routes, Route } from 'react-router-dom'
+import RecruiterDashboard from "../pages/RecruiterDashboard";
+import CreateJobDescription from "../pages/CreateJobDescription";
+import JobDescriptions from "../pages/JobDescriptions";
+import Candidates from "../pages/Candidates";
+import UploadResumes from "../pages/UploadResumes";
+import AiScreening from "../pages/AiScreening";
+import Interviews from "../pages/Interviews";
+import MyProfile from "../pages/MyProfile";
+import CandidateProfile from "../pages/CandidateProfile";
+import ScheduleInterview from "../pages/ScheduleInterview";
 
 export default function RecruiterShell() {
-  const navigate = useNavigate()  
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <RecruiterSidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header />
+        <RecruiterHeader />
         <Routes>
           <Route path="/"           element={<RecruiterDashboard />} />
           <Route path="/jobs"       element={<JobDescriptions />} />  {/* ← ADD THIS */}
