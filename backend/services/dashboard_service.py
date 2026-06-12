@@ -19,9 +19,7 @@ def get_admin_dashboard_data():
         SELECT COUNT(*) FROM job_descriptions WHERE LOWER(status) = 'active'
     """)).scalar() or 0
 
-    interviews_scheduled = db.session.execute(db.text("""
-        SELECT COUNT(*) FROM interviews
-    """)).scalar() or 0
+    interviews_scheduled = 0
 
     candidate_status = db.session.execute(db.text("""
         SELECT status, COUNT(*) 

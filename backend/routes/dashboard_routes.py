@@ -17,7 +17,12 @@ def admin_dashboard():
         data = get_admin_dashboard_data()
         return success_response("Admin dashboard data fetched successfully", data, 200)
     except Exception as e:
-        return error_response(str(e), 500)
+        print("ADMIN DASHBOARD ERROR:", str(e))
+        return {
+            "success": False,
+            "message": "Failed to load admin dashboard",
+            "error": str(e)
+        }, 500
     
 @dashboard_bp.route("/recruiters", methods=["GET"])
 def recruiters_list():
